@@ -1,0 +1,27 @@
+{
+	"format_version": "1.12",
+	"minecraft:recipe_shaped": {
+		"description": {
+			"identifier": "vending:vending_machine_recipe"
+		},
+		"tags": [
+			"crafting_table"
+		],
+		"key": {
+			"#": {
+				"item": "minecraft:obsidian"
+			},
+			"X": {
+				"item": "minecraft:redstone"
+			}
+		},
+		"pattern": [
+			"###",
+			"#X#",
+			"###"
+		],
+		"result": {
+			"item": "vending:vending_machine_item"
+		}
+	}
+}

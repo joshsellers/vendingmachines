@@ -1,0 +1,9 @@
+{
+	"resource_pack_name": "Vending Machines",
+	"texture_name": "atlas.items",
+	"texture_data": {
+		"vending_vending_machine_item": {
+			"textures": "textures/items/vending_machine_item"
+		}
+	}
+}

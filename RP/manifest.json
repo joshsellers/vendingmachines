@@ -1,0 +1,42 @@
+{
+	"format_version": 2,
+	"metadata": {
+		"authors": [
+			"joshs"
+		],
+		"generated_with": {
+			"bridge": [
+				"2.6.0"
+			],
+			"dash": [
+				"0.10.8"
+			]
+		}
+	},
+	"header": {
+		"name": "Vending Machines",
+		"description": "",
+		"min_engine_version": [
+			1,
+			19,
+			80
+		],
+		"uuid": "a54b50e3-5722-4efa-a834-84ac03129ad8",
+		"version": [
+			1,
+			0,
+			0
+		]
+	},
+	"modules": [
+		{
+			"type": "resources",
+			"uuid": "a9b1ce1b-679a-475e-97fe-bf4f8129b746",
+			"version": [
+				1,
+				0,
+				0
+			]
+		}
+	]
+}
