@@ -26,8 +26,10 @@ world.afterEvents.itemStartUseOn.subscribe((event) => {
 
                 if (playerInventory.getSlot(i).amount > 1) {
                     playerInventory.getSlot(i).amount -= 1;
+                    break;
                 } else {
                     playerInventory.setItem(i);
+                    break;
                 }
             }
         }
