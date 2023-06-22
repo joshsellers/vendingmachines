@@ -4,7 +4,7 @@
 		"description": {
 			"identifier": "vending:vending_machine",
 			"materials": {
-				"default": "entity_alphatest"
+				"default": "entity_alphablend"
 			},
 			"textures": {
 				"default": "textures/entity/Entities/vend_machine"
