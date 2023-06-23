@@ -1,4 +1,5 @@
-import { world } from "@minecraft/server"
+import { world, ItemStack } from "@minecraft/server"
+import * as UI from "@minecraft/server-ui"
 
 world.afterEvents.itemStartUseOn.subscribe((event) => {
     const item = event.itemStack;
@@ -23,7 +24,6 @@ world.afterEvents.itemStartUseOn.subscribe((event) => {
         for (let i = 0; i < playerInventory.size; i++) {
             if (playerInventory.getItem(i) != undefined
                 && playerInventory.getItem(i).typeId == "vending:vending_machine_item") {
-
                 if (playerInventory.getSlot(i).amount > 1) {
                     playerInventory.getSlot(i).amount -= 1;
                     break;
@@ -36,6 +36,210 @@ world.afterEvents.itemStartUseOn.subscribe((event) => {
     }
 });
 
+
+world.afterEvents.itemUse.subscribe((event) => {
+    const item = event.itemStack;
+    const player = event.source;
+    if (item != undefined && item.typeId == "vending:configurer") {
+        const entities = player.getEntitiesFromViewDirection();
+        if (entities.length != 0 && entities[0].typeId == "vending:vending_machine") {
+            const target = entities[0];
+
+            if (!isWithinRange(player, target)) return;
+
+            var oldPriceTag;
+            var oldProductTag;
+
+            if (target.getTags().length > 0) {
+                target.getTags().forEach((tag) => {
+                    if (tag.includes("PRICE")) {
+                        oldPriceTag = tag;
+                    } else if (tag.includes("PROD")) {
+                        oldProductTag = tag;
+                    }
+                });
+            }
+            var prefillPriceItem = "emerald";
+            var prefillPriceAmount = 1;
+            var prefillProductItem = "coal";
+            var prefillProductAmount = 1;
+
+            if (oldPriceTag != undefined && oldProductTag != undefined) {
+                prefillPriceItem = oldPriceTag.split(":")[1];
+                prefillPriceAmount = parseInt(oldPriceTag.split(":")[2]);
+                prefillProductItem = oldProductTag.split(":")[1];
+                prefillProductAmount = parseInt(oldProductTag.split(":")[2]);
+            }
+
+
+            let modal = new UI.ModalFormData()
+                .title("§5Vending Machine")
+                .textField("Vendor Recieves:", "emerald", prefillPriceItem)
+                .slider("Amount", 1, 64, 1, prefillPriceAmount)
+                .textField("Customer Recieves:", "coal", prefillProductItem)
+                .slider("Amount", 1, 64, 1, prefillProductAmount)
+                .show(player).then((response) => {
+                    if (response.formValues != undefined) {
+                        if (target.getTags().length > 0) {
+                            target.getTags().forEach((tag) => {
+                                target.removeTag(tag);
+                            });
+                        }
+
+                        var priceName = response.formValues[0].replace(/\s+/g, '')
+                            .toLowerCase();
+                        var productName = response.formValues[2].replace(/\s+/g, '')
+                            .toLowerCase();
+                        var priceAmount = response.formValues[1];
+                        var productAmount = response.formValues[3];
+
+                        var priceTag = `PRICE:${priceName}:${priceAmount}`;
+                        var productTag = `PROD:${productName}:${productAmount}`;
+                        target.addTag(priceTag);
+                        target.addTag(productTag);
+                    }
+                });
+        }
+    } else if (item != undefined && item.typeId == "vending:vending_machine_key") {
+        const entities = player.getEntitiesFromViewDirection();
+        if (entities.length != 0 && entities[0].typeId == "vending:vending_machine") {
+            const target = entities[0];
+
+            if (!isWithinRange(player, target)) return;
+
+            const targetInventory = target.getComponent("inventory").container;
+            for (let i = 0; i < targetInventory.size; i++) {
+                if (targetInventory.getItem(i) != undefined) {
+                    const targetItem = targetInventory.getItem(i);
+                    world.getDimension("overworld").
+                        spawnItem(targetItem, player.location);
+
+                    targetInventory.setItem(i);
+                }
+            }
+        }
+    } else if (item != undefined) {
+        const entities = player.getEntitiesFromViewDirection();
+        if (entities.length != 0 && entities[0].typeId == "vending:vending_machine") {
+            const target = entities[0];
+
+            if (!isWithinRange(player, target)) return;
+
+            var priceTag;
+            var productTag;
+
+            if (target.getTags().length > 0) {
+                target.getTags().forEach((tag) => {
+                    if (tag.includes("PRICE")) {
+                        priceTag = tag;
+                    } else if (tag.includes("PROD")) {
+                        productTag = tag;
+                    }
+                });
+            }
+            var priceItem = "";
+            var priceAmount = 0;
+            var productItem = "";
+            var productAmount = 0;
+
+            if (priceTag != undefined && productTag != undefined) {
+                priceItem = priceTag.split(":")[1];
+                priceAmount = parseInt(priceTag.split(":")[2]);
+                productItem = productTag.split(":")[1];
+                productAmount = parseInt(productTag.split(":")[2]);
+            } else return;
+
+
+            const targetInventory = target.getComponent("inventory").container;
+            const playerInventory = player.getComponent("inventory").container;
+
+            var targetItem = undefined;
+            if (item.typeId.split(":")[1] == priceItem) {
+                if (item.amount >= priceAmount) {
+                    var foundAvailableProduct = false;
+                    for (let i = 0; i < targetInventory.size; i++) {
+                        if (targetInventory.getItem(i) != undefined) {
+                            targetItem = targetInventory.getItem(i);
+                            if (targetItem.typeId.split(":")[1] == productItem) {
+                                if (targetItem.amount >= productAmount) {
+                                    if (targetItem.amount - productAmount > 0) {
+                                        targetInventory.getSlot(i).amount -= productAmount;
+                                    } else {
+                                        targetInventory.setItem(i);
+                                    }
+
+                                    for (let j = 0; j < playerInventory.size; j++) {
+                                        const playerItem = playerInventory.getSlot(j);
+                                        if (playerItem != undefined &&
+                                            playerItem.typeId.split(":")[1]
+                                            == priceItem
+                                            && playerItem.amount == item.amount) {
+
+                                            if (item.amount - priceAmount > 0) {
+                                                playerItem.amount -= priceAmount;
+                                            } else {
+                                                playerInventory.setItem(j);
+                                            }
+
+                                            targetInventory
+                                                .addItem(
+                                                    new ItemStack(
+                                                        priceItem, priceAmount
+                                                    )
+                                                );
+                                            break;
+                                        }
+                                    }
+                                    foundAvailableProduct = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (foundAvailableProduct) {
+                        world.getDimension("overworld").
+                            spawnItem(new ItemStack(targetItem.typeId, productAmount),
+                                player.location);
+                    } else {
+                        player.sendMessage("This vending machine is out of stock!");
+                    }
+
+                } else {
+                    player.sendMessage(`You don't have enough §a${priceItem}!`);
+                }
+            } else if (item.typeId.split(":")[1] == productItem) {
+                for (let i = 0; i < playerInventory.size; i++) {
+                    const playerItem = playerInventory.getSlot(i);
+                    if (playerItem != undefined && playerItem.typeId != undefined
+                        && playerItem.typeId.split(":")[1] == productItem) {
+                        if (playerItem.amount - 1 > 0) {
+                            playerItem.amount -= 1;
+                        } else {
+                            playerInventory.setItem(i);
+                        }
+                        targetInventory.addItem(new ItemStack(productItem, 1));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+});
+
+function isWithinRange(player, target) {
+    const playerLoc = player.location;
+    var targetLoc = target.location;
+
+    const maxDist = 4;
+    const checkX = targetLoc.x - playerLoc.x < maxDist
+        && targetLoc.x - playerLoc.x > -maxDist;
+    const checkY = targetLoc.y - playerLoc.y < maxDist
+        && targetLoc.y - playerLoc.y > -maxDist;
+    const checkZ = targetLoc.z - playerLoc.z < maxDist
+        && targetLoc.z - playerLoc.z > -maxDist;
+    return (checkX && checkY && checkZ);
+}
 
 function log(message) {
     world.getAllPlayers().forEach((player) => {

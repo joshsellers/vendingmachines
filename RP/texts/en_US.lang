@@ -1,3 +1,5 @@
 item.spawn_egg.entity.vending:vending_machine.name=Spawn Vending Machine
 entity.vending:vending_machine.name=Vending Machine
 item.vending:vending_machine_item=Vending Machine
+item.vending:vending_machine_key=Vending Machine Key
+item.vending:configurer=Vending Machine Configurer

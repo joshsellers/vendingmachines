@@ -1,0 +1,16 @@
+{
+	"format_version": "1.16.100",
+	"minecraft:item": {
+		"description": {
+			"identifier": "vending:configurer",
+			"category": "items"
+		},
+		"components": {
+			"minecraft:icon": {
+				"texture": "vending_configurer"
+			},
+			"minecraft:max_stack_size": 1,
+			"minecraft:on_use": {}
+		}
+	}
+}

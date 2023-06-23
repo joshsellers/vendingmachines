@@ -23,11 +23,24 @@
 				"is_pushable_by_piston": false
 			},
 			"minecraft:health": {
-				"value": 5,
-				"max": 5
+				"value": 10,
+				"max": 10
 			},
 			"minecraft:knockback_resistance": {
 				"value": 1.0
+			},
+			"minecraft:loot": {
+				"table": "loot_tables/vending_machine.json"
+			},
+			"minecraft:inventory": {
+				"container_type": "inventory",
+				"inventory_size": 20,
+				"private": true,
+				"restrict_to_owner": true
+			},
+			"minecraft:nameable": {
+				"allow_name_tag_renaming": true,
+				"always_show": true
 			}
 		},
 		"events": {}
