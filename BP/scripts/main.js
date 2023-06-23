@@ -3,7 +3,8 @@ import * as UI from "@minecraft/server-ui"
 
 world.afterEvents.itemStartUseOn.subscribe((event) => {
     const item = event.itemStack;
-    if (item != undefined && item.typeId == "vending:vending_machine_item") {
+    if (item != undefined && item.typeId != undefined
+        && item.typeId == "vending:vending_machine_item") {
         const blockLocation = event.block.location;
         const spawnedMachine = world.getDimension("overworld")
             .spawnEntity("vending:vending_machine",
@@ -23,6 +24,7 @@ world.afterEvents.itemStartUseOn.subscribe((event) => {
 
         for (let i = 0; i < playerInventory.size; i++) {
             if (playerInventory.getItem(i) != undefined
+                && playerInventory.getItem(i).typeId != undefined
                 && playerInventory.getItem(i).typeId == "vending:vending_machine_item") {
                 if (playerInventory.getSlot(i).amount > 1) {
                     playerInventory.getSlot(i).amount -= 1;
@@ -40,7 +42,8 @@ world.afterEvents.itemStartUseOn.subscribe((event) => {
 world.afterEvents.itemUse.subscribe((event) => {
     const item = event.itemStack;
     const player = event.source;
-    if (item != undefined && item.typeId == "vending:configurer") {
+    if (item != undefined && item.typeId != undefined
+        && item.typeId == "vending:configurer") {
         const entities = player.getEntitiesFromViewDirection();
         if (entities.length != 0 && entities[0].typeId == "vending:vending_machine") {
             const target = entities[0];
@@ -50,15 +53,20 @@ world.afterEvents.itemUse.subscribe((event) => {
             var oldPriceTag;
             var oldProductTag;
 
+            var password = "NULLPASSWRD";
+
             if (target.getTags().length > 0) {
                 target.getTags().forEach((tag) => {
                     if (tag.includes("PRICE")) {
                         oldPriceTag = tag;
                     } else if (tag.includes("PROD")) {
                         oldProductTag = tag;
+                    } else if (tag.includes("PWRD")) {
+                        password = tag.split(":")[1];
                     }
                 });
             }
+
             var prefillPriceItem = "emerald";
             var prefillPriceAmount = 1;
             var prefillProductItem = "coal";
@@ -71,51 +79,138 @@ world.afterEvents.itemUse.subscribe((event) => {
                 prefillProductAmount = parseInt(oldProductTag.split(":")[2]);
             }
 
+            if (password != "NULLPASSWRD") {
+                var enteredPassword = "";
+                let modal = new UI.ModalFormData()
+                    .title("§5Vending Machine§r Login")
+                    .textField("Enter Password", "")
+                    .show(player).then((formData) => {
+                        if (formData.formValues != undefined) {
+                            enteredPassword = formData.formValues[0];
+                            if (enteredPassword != password) {
+                                player.sendMessage(
+                                    "§4The password you entered was incorrect."
+                                );
+                                return;
+                            }
 
-            let modal = new UI.ModalFormData()
-                .title("§5Vending Machine")
-                .textField("Vendor Recieves:", "emerald", prefillPriceItem)
-                .slider("Amount", 1, 64, 1, prefillPriceAmount)
-                .textField("Customer Recieves:", "coal", prefillProductItem)
-                .slider("Amount", 1, 64, 1, prefillProductAmount)
-                .show(player).then((response) => {
-                    if (response.formValues != undefined) {
-                        if (target.getTags().length > 0) {
-                            target.getTags().forEach((tag) => {
-                                target.removeTag(tag);
-                            });
+                            let modal2 = new UI.ModalFormData()
+                                .title("§5Vending Machine")
+                                .textField("Vendor Recieves:", "emerald", prefillPriceItem)
+                                .slider("Amount", 1, 64, 1, prefillPriceAmount)
+                                .textField("Customer Recieves:", "coal", prefillProductItem)
+                                .slider("Amount", 1, 64, 1, prefillProductAmount)
+                                .textField("Set password", password, password)
+                                .show(player).then((response) => {
+                                    if (response.formValues != undefined) {
+                                        if (target.getTags().length > 0) {
+                                            target.getTags().forEach((tag) => {
+                                                target.removeTag(tag);
+                                            });
+                                        }
+
+                                        var priceName = response.formValues[0].replace(/\s+/g, '')
+                                            .toLowerCase();
+                                        var productName = response.formValues[2].replace(/\s+/g, '')
+                                            .toLowerCase();
+                                        var priceAmount = response.formValues[1];
+                                        var productAmount = response.formValues[3];
+
+                                        password = response.formValues[4];
+
+                                        var priceTag = `PRICE:${priceName}:${priceAmount}`;
+                                        var productTag = `PROD:${productName}:${productAmount}`;
+                                        var passwordTag = `PWRD:${password}`;
+                                        target.addTag(priceTag);
+                                        target.addTag(productTag);
+                                        target.addTag(passwordTag);
+                                    }
+                                    return;
+                                });
                         }
+                    });
+            } else {
+                password = "";
+                let modal = new UI.ModalFormData()
+                    .title("§5Vending Machine")
+                    .textField("Vendor Recieves:", "emerald", prefillPriceItem)
+                    .slider("Amount", 1, 64, 1, prefillPriceAmount)
+                    .textField("Customer Recieves:", "coal", prefillProductItem)
+                    .slider("Amount", 1, 64, 1, prefillProductAmount)
+                    .textField("Set password", password, password)
+                    .show(player).then((response) => {
+                        if (response.formValues != undefined) {
+                            if (target.getTags().length > 0) {
+                                target.getTags().forEach((tag) => {
+                                    target.removeTag(tag);
+                                });
+                            }
 
-                        var priceName = response.formValues[0].replace(/\s+/g, '')
-                            .toLowerCase();
-                        var productName = response.formValues[2].replace(/\s+/g, '')
-                            .toLowerCase();
-                        var priceAmount = response.formValues[1];
-                        var productAmount = response.formValues[3];
+                            var priceName = response.formValues[0].replace(/\s+/g, '')
+                                .toLowerCase();
+                            var productName = response.formValues[2].replace(/\s+/g, '')
+                                .toLowerCase();
+                            var priceAmount = response.formValues[1];
+                            var productAmount = response.formValues[3];
 
-                        var priceTag = `PRICE:${priceName}:${priceAmount}`;
-                        var productTag = `PROD:${productName}:${productAmount}`;
-                        target.addTag(priceTag);
-                        target.addTag(productTag);
-                    }
-                });
+                            password = response.formValues[4];
+
+                            var priceTag = `PRICE:${priceName}:${priceAmount}`;
+                            var productTag = `PROD:${productName}:${productAmount}`;
+                            var passwordTag = `PWRD:${password}`;
+                            target.addTag(priceTag);
+                            target.addTag(productTag);
+                            target.addTag(passwordTag);
+                        }
+                    });
+            }
         }
-    } else if (item != undefined && item.typeId == "vending:vending_machine_key") {
+    } else if (item != undefined && item.typeId != undefined
+        && item.typeId == "vending:vending_machine_key") {
         const entities = player.getEntitiesFromViewDirection();
         if (entities.length != 0 && entities[0].typeId == "vending:vending_machine") {
             const target = entities[0];
 
             if (!isWithinRange(player, target)) return;
 
-            const targetInventory = target.getComponent("inventory").container;
-            for (let i = 0; i < targetInventory.size; i++) {
-                if (targetInventory.getItem(i) != undefined) {
-                    const targetItem = targetInventory.getItem(i);
-                    world.getDimension("overworld").
-                        spawnItem(targetItem, player.location);
+            var password = "NULLPASSWRD";
+            if (target.getTags().length > 0) {
+                target.getTags().forEach((tag) => {
+                    if (tag.includes("PWRD")) {
+                        password = tag.split(":")[1];
+                    }
+                });
+            }
 
-                    targetInventory.setItem(i);
-                }
+            if (password != "NULLPASSWRD") {
+                var enteredPassword = "";
+                let modal = new UI.ModalFormData()
+                    .title("§5Vending Machine§r Login")
+                    .textField("Enter Password", "")
+                    .show(player).then((formData) => {
+                        if (formData.formValues != undefined) {
+                            enteredPassword = formData.formValues[0];
+                            if (enteredPassword != password) {
+                                player.sendMessage("§4The password you entered was incorrect.");
+                                return;
+                            }
+                        } else {
+                            return;
+                        }
+                        const targetInventory = target.getComponent("inventory").container;
+                        for (let i = 0; i < targetInventory.size; i++) {
+                            if (targetInventory.getItem(i) != undefined
+                                && targetInventory.getItem(i).typeId != undefined) {
+                                const targetItem = targetInventory.getItem(i);
+                                world.getDimension("overworld").
+                                    spawnItem(targetItem, player.location);
+
+                                targetInventory.setItem(i);
+                            }
+                        }
+                    })
+            } else {
+                return;
             }
         }
     } else if (item != undefined) {
@@ -158,7 +253,8 @@ world.afterEvents.itemUse.subscribe((event) => {
                 if (item.amount >= priceAmount) {
                     var foundAvailableProduct = false;
                     for (let i = 0; i < targetInventory.size; i++) {
-                        if (targetInventory.getItem(i) != undefined) {
+                        if (targetInventory.getItem(i) != undefined
+                            && targetInventory.getItem(i).typeId != undefined) {
                             targetItem = targetInventory.getItem(i);
                             if (targetItem.typeId.split(":")[1] == productItem) {
                                 if (targetItem.amount >= productAmount) {
@@ -170,8 +266,9 @@ world.afterEvents.itemUse.subscribe((event) => {
 
                                     for (let j = 0; j < playerInventory.size; j++) {
                                         const playerItem = playerInventory.getSlot(j);
-                                        if (playerItem != undefined &&
-                                            playerItem.typeId.split(":")[1]
+                                        if (playerItem != undefined
+                                            && playerItem.typeId != undefined
+                                            && playerItem.typeId.split(":")[1]
                                             == priceItem
                                             && playerItem.amount == item.amount) {
 
@@ -226,6 +323,20 @@ world.afterEvents.itemUse.subscribe((event) => {
         }
     }
 });
+
+function passwordPrompt(player) {
+    var enteredPassword = "";
+    let modal = new UI.ModalFormData()
+        .title("§5Vending Machine§r Login")
+        .textField("Enter Password", "")
+        .show(player).then((response) => {
+            if (response != undefined) {
+                enteredPassword = response.formValues[0];
+            }
+        });
+
+    return enteredPassword;
+}
 
 function isWithinRange(player, target) {
     const playerLoc = player.location;
